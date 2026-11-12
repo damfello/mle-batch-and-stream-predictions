@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: mlops
+      POSTGRES_PASSWORD: mlops
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+
+  mlflow:
+    build: .
+    depends_on:
+      - postgres
+    working_dir: /app
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        mkdir -p /app/storage/mlartifacts && \
+        mlflow server \
+          --host 0.0.0.0 \
+          --port 5000 \
+          --backend-store-uri postgresql+psycopg2://mlops:mlops@postgres:5432/mlflow \
+          --serve-artifacts \
+          --artifacts-destination /app/storage/mlartifacts
+    ports:
+      - "5001:5000"
+    volumes:
+      - ../:/app
+
+  prefect:
+    build:
+      context: .
+      args:
+        # Prefect still uses FastAPI's min_items argument, removed in 0.155.
+        PACKAGES: "prefect==3.8.6 fastapi<0.155"
+    depends_on:
+      - postgres
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://mlops:mlops@postgres:5432/prefect
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        prefect server start --host 0.0.0.0
+    ports:
+      - "4200:4200"
+
+volumes:
+  postgres_data:

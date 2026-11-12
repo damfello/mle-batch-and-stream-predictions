@@ -1,0 +1,21 @@
+# macOS and Jupyter
+.DS_Store
+.ipynb_checkpoints/
+
+# Python caches and local tooling state
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Virtual environments and local configuration
+.env
+.venv/
+.uv/
+venv/
+env/
+
+# Local outputs created by the lessons
+data/*
+!data/.gitkeep
+storage/
